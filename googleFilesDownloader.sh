@@ -72,7 +72,8 @@ shopt -u nullglob;
 if [ -z "$TORRENT_FILE" ]; then
 	read -p "URL: " URL;
 fi
-read -p "Compress files? [Y/n]: " COMPRESS;
+# ИЗМЕНЕНИЕ: поменяли подсказку на [y/N], чтобы показать, что N - по умолчанию
+read -p "Compress files? [y/N]: " COMPRESS;
 cd '/content';
 if [ ! -e 'googleFilesDownloader' ]; then
 	mkdir 'googleFilesDownloader';
@@ -150,10 +151,12 @@ fi
 if [ -e "$hash.torrent" ]; then
 	rm $hash.torrent;
 fi
-if [ "${COMPRESS^^}" == "N" ]; then
-	mv ../$hash "$DRIVE/";
-else
+
+# ИЗМЕНЕНИЕ: Теперь сжимаем, только если явно ввели Y. В остальных случаях (пусто или N) просто перемещаем.
+if [ "${COMPRESS^^}" == "Y" ]; then
 	zip -r "$DRIVE/$hash.zip" ./;
 	rm -r ../$hash;
+else
+	mv ../$hash "$DRIVE/";
 fi
 echo 'FINISH';
