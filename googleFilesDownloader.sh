@@ -78,8 +78,8 @@ shopt -u nullglob;
 if [ -z "$TORRENT_FILE" ]; then
 	read -p "URL: " URL;
 fi
-
-read -p "Compress files? [Y/n]: " COMPRESS;
+# ИЗМЕНЕНИЕ: поменяли подсказку на [y/N], чтобы показать, что N - по умолчанию
+read -p "Compress files? [y/N]: " COMPRESS;
 
 # --- ИЗМЕНЕНИЕ ТУТ ---
 # Вместо cd /content переходим сразу на Диск
