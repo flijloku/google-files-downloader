@@ -132,9 +132,9 @@ elif [ "$is_torrent" == "1" ]; then
 	if [ "${FULL^^}" == "N" ]; then
 		aria2c -S "$TORRENT_FILE_PATH";
 		read -p "Please select a files (1,2,3): " FILES;
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$TORRENT_FILE_PATH";
+		aria2c --file-allocation=none --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$TORRENT_FILE_PATH";
 	else
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$TORRENT_FILE_PATH";
+		aria2c --file-allocation=none --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$TORRENT_FILE_PATH";
 	fi
 elif [ "$is_magnet" == "1" ]; then
 	hash=$(echo "$URL" | grep -oP "(?<=btih:).*?(?=&)");
@@ -146,9 +146,9 @@ elif [ "$is_magnet" == "1" ]; then
 		aria2c --bt-metadata-only=true --bt-save-metadata=true -q "$URL";
 		aria2c -S "$hash.torrent";
 		read -p "Please select a files (1,2,3): " FILES;
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$hash.torrent";
+		aria2c --file-allocation=none --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$hash.torrent";
 	else
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$URL";
+		aria2c --file-allocation=none --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$URL";
 	fi
 fi
 
