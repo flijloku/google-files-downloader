@@ -4,6 +4,8 @@ if [ ! -e 'drive' ]; then
 	echo 'Error: drive not mounted';
 	exit;
 fi
+
+# Навигация по диску для выбора папки (оставляем как было)
 cd drive;
 shopt -s nullglob;
 dirs=();
@@ -24,12 +26,14 @@ for dirname_my in "${dirs_my[@]}"; do
 		dirs+=("$dirname_my");
 	fi
 done
+
 for dirname in "${dirs[@]}"; do
 	if [ -e "$dirname/googleFilesDownloader" ]; then
 		dirs_d="$dirname";
 		break;
 	fi
 done
+
 if [ -z "$dirs_d" ]; then
 	for dirname in "${dirs[@]}"; do
 		echo "$((++dirs_i)): $dirname";
@@ -41,15 +45,15 @@ if [ -z "$dirs_d" ]; then
 		exit;
 	fi;
 fi
+
 cd "$dirs_d";
 if [ ! -e "googleFilesDownloader" ]; then
 	mkdir 'googleFilesDownloader';
 fi
-if [ ! -e "googleFilesDownloader" ]; then
-	exit;
-fi;
 cd 'googleFilesDownloader';
-DRIVE=$(pwd);
+DRIVE=$(pwd); # Теперь DRIVE — это полный путь на Google Диске
+
+# Проверка торрент-файлов в папке на Диске
 ls > /dev/null;
 torrent=(*.torrent);
 torrent_i=0;
@@ -59,6 +63,7 @@ for torrentname in "${torrent[@]}"; do
 	fi
 	echo "$((++torrent_i)): $torrentname";
 done
+
 if [ "$torrent_i" -ne "0" ]; then
 	read -p "Please select a torrent file: " torrent_s;
 	if [ ! -z "$torrent_s" ]; then
@@ -69,15 +74,18 @@ if [ "$torrent_i" -ne "0" ]; then
 	fi
 fi
 shopt -u nullglob;
+
 if [ -z "$TORRENT_FILE" ]; then
 	read -p "URL: " URL;
 fi
+
 read -p "Compress files? [Y/n]: " COMPRESS;
-cd '/content';
-if [ ! -e 'googleFilesDownloader' ]; then
-	mkdir 'googleFilesDownloader';
-fi
-cd 'googleFilesDownloader';
+
+# --- ИЗМЕНЕНИЕ ТУТ ---
+# Вместо cd /content переходим сразу на Диск
+cd "$DRIVE";
+# ---------------------
+
 if [ -z "$URL" ]; then
 	if [ -z "$TORRENT_FILE" ]; then
 		echo 'Error: url not found';
@@ -97,63 +105,65 @@ else
 		URL="https://drive.google.com/uc?export=download&id=$URL";
 	fi;
 fi
+
+# Логика загрузки (теперь выполняется прямо в папке на Диске)
 if [ "$is_http" == "1" ]; then
 	hash=$(echo -n "$URL" | md5sum | awk '{print $1}');
 	mkdir -p $hash;
 	cd $hash;
-	if [[ -z `type -p aria2c` ]]; then
-		apt install aria2 -y
-	fi
-	aria2c -x 10 -s 10 $URL;
+	if [[ -z `type -p aria2c` ]]; then apt install aria2 -y; fi
+	aria2c -x 10 -s 10 "$URL";
 elif [ "$is_torrent" == "1" ]; then
 	if [ ! -z "$URL" ]; then
 		hash=$(echo -n "$URL" | md5sum | awk '{print $1}');
 	else
 		hash=$(echo -n "$TORRENT_FILE" | md5sum | awk '{print $1}');
 	fi
-	mkdir -p $hash;
-	cd $hash;
+	mkdir -p "$hash";
+	cd "$hash";
 	read -p "Download the full files? [Y/n]: " FULL;
-	if [[ -z `type -p aria2c` ]]; then
-		apt install aria2 -y
-	fi
+	if [[ -z `type -p aria2c` ]]; then apt install aria2 -y; fi
 	if [ ! -z "$URL" ]; then
-		TORRENT_FILE="$hash.torrent";
-		curl -L -o $TORRENT_FILE "$URL";
+		TORRENT_FILE_PATH="$hash.torrent";
+		curl -L -o "$TORRENT_FILE_PATH" "$URL";
 	else
-		TORRENT_FILE="$DRIVE/$TORRENT_FILE";
+		TORRENT_FILE_PATH="$DRIVE/$TORRENT_FILE";
 	fi
 	if [ "${FULL^^}" == "N" ]; then
-		aria2c -S "$TORRENT_FILE";
+		aria2c -S "$TORRENT_FILE_PATH";
 		read -p "Please select a files (1,2,3): " FILES;
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$TORRENT_FILE";
+		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$TORRENT_FILE_PATH";
 	else
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$TORRENT_FILE";
+		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$TORRENT_FILE_PATH";
 	fi
 elif [ "$is_magnet" == "1" ]; then
 	hash=$(echo "$URL" | grep -oP "(?<=btih:).*?(?=&)");
 	mkdir -p $hash;
 	cd $hash;
 	read -p "Download the full files? [Y/n]: " FULL;
-	if [[ -z `type -p aria2c` ]]; then
-		apt install aria2 -y
-	fi
+	if [[ -z `type -p aria2c` ]]; then apt install aria2 -y; fi
 	if [ "${FULL^^}" == "N" ]; then
 		aria2c --bt-metadata-only=true --bt-save-metadata=true -q "$URL";
 		aria2c -S "$hash.torrent";
 		read -p "Please select a files (1,2,3): " FILES;
-		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" $hash.torrent;
+		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 --select-file="$FILES" "$hash.torrent";
 	else
 		aria2c --allow-overwrite --disable-ipv6 --seed-time=0 --seed-ratio=0.0 "$URL";
 	fi
 fi
+
 if [ -e "$hash.torrent" ]; then
-	rm $hash.torrent;
+	rm "$hash.torrent";
 fi
-if [ "${COMPRESS^^}" == "N" ]; then
-	mv ../$hash "$DRIVE/";
+
+# Финальная обработка
+if [ "${COMPRESS^^}" == "Y" ]; then
+    # Если нужно сжать, архивируем текущую папку в корень googleFilesDownloader
+    zip -r "../$hash.zip" ./;
+    cd ..;
+    rm -r "$hash";
 else
-	zip -r "$DRIVE/$hash.zip" ./;
-	rm -r ../$hash;
+    echo "Files are already on Google Drive in folder: $hash";
 fi
+
 echo 'FINISH';
