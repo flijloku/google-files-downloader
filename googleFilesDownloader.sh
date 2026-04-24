@@ -112,7 +112,7 @@ if [ "$is_http" == "1" ]; then
 	mkdir -p $hash;
 	cd $hash;
 	if [[ -z `type -p aria2c` ]]; then apt install aria2 -y; fi
-	aria2c -x 10 -s 10 "$URL";
+	aria2c --file-allocation=none -x 10 -s 10 "$URL";
 elif [ "$is_torrent" == "1" ]; then
 	if [ ! -z "$URL" ]; then
 		hash=$(echo -n "$URL" | md5sum | awk '{print $1}');
